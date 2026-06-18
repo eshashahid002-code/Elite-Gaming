@@ -1,133 +1,142 @@
-let level=1, score=0, lives=3, time=60;
-let coins = localStorage.getItem("coins") || 0;
-let best = localStorage.getItem("best") || 0;
+const puzzle = document.getElementById("puzzle");
+const movesEl = document.getElementById("moves");
+const timerEl = document.getElementById("timer");
+const bestEl = document.getElementById("best");
+const levelEl = document.getElementById("level");
+const clickSound = document.getElementById("clickSound");
 
-document.getElementById("coins").innerText = coins;
-document.getElementById("best").innerText = best;
+let tiles = [];
+let size = 4;
 
-let game=document.querySelector(".game");
-let msg=document.getElementById("msg");
-
-let first=null, second=null;
+let moves = 0;
+let time = 0;
 let timer;
+let running = false;
 
-function emojis(level){
-    if(level==1) return ["🎮","🎮","🐍","🐍"];
-    if(level==2) return ["🎮","🎮","🐍","🐍","🚗","🚗"];
-    return ["🎮","🎮","🐍","🐍","🚗","🚗","🔥","🔥"];
-}
+let best = localStorage.getItem("bestMoves") || 0;
+bestEl.textContent = best;
 
-function startGame(lv){
+function init(){
+    size = parseInt(levelEl.value);
 
-    level=lv;
-    document.getElementById("menu").style.display="none";
+    puzzle.style.gridTemplateColumns = `repeat(${size},1fr)`;
 
-    score=0;
-    lives=3;
-    time=60;
+    tiles = [...Array(size*size-1).keys()].map(i=>i+1);
+    tiles.push("");
 
-    update();
+    moves = 0;
+    time = 0;
+    running = false;
 
-    game.innerHTML="";
-    msg.innerHTML="";
+    movesEl.textContent = 0;
+    timerEl.textContent = 0;
 
     clearInterval(timer);
-    timer=setInterval(()=>{
-        time--;
-        update();
-        if(time==0) gameOver();
-    },1000);
 
-    let arr=emojis(level).sort(()=>Math.random()-0.5);
+    render();
+    shuffle();
+}
 
-    let cols = level==1?2:level==2?3:4;
-    game.style.gridTemplateColumns=`repeat(${cols},80px)`;
+function render(){
+    puzzle.innerHTML = "";
 
-    arr.forEach(e=>{
-        let box=document.createElement("div");
-        box.classList.add("card");
-        box.innerText="❓";
+    tiles.forEach((t,i)=>{
+        const div = document.createElement("div");
 
-        box.onclick=function(){
+        if(t === ""){
+            div.className = "tile empty";
+        }else{
+            div.className = "tile";
+            div.textContent = t;
 
-            if(box.classList.contains("flip")) return;
-
-            box.classList.add("flip");
-            box.innerText=e;
-
-            if(!first){
-                first=box;
-            }else{
-                second=box;
-
-                if(first.innerText===second.innerText){
-                    score++;
-                    coins++;
-                    save();
-                    checkWin();
-                }else{
-                    setTimeout(()=>{
-                        first.classList.remove("flip");
-                        second.classList.remove("flip");
-                        first.innerText="❓";
-                        second.innerText="❓";
-
-                        lives--;
-                        update();
-
-                        if(lives==0) gameOver();
-
-                    },500);
-                }
-
-                first=null;
-                second=null;
-            }
+            div.onclick = ()=>{
+                clickSound.play();
+                move(i);
+            };
         }
 
-        game.appendChild(box);
+        puzzle.appendChild(div);
     });
 }
 
-function update(){
-    document.getElementById("level").innerText=level;
-    document.getElementById("score").innerText=score;
-    document.getElementById("lives").innerText=lives;
-    document.getElementById("time").innerText=time;
-    document.getElementById("coins").innerText=coins;
+function move(i){
+    const empty = tiles.indexOf("");
+
+    const valid = [
+        empty-1, empty+1,
+        empty-size, empty+size
+    ];
+
+    if(valid.includes(i)){
+
+        [tiles[i], tiles[empty]] = [tiles[empty], tiles[i]];
+
+        moves++;
+        movesEl.textContent = moves;
+
+        if(!running){
+            startTimer();
+            running = true;
+        }
+
+        render();
+        checkWin();
+    }
 }
 
-function save(){
-    if(score>best){
-        best=score;
-        localStorage.setItem("best",best);
+function shuffle(){
+    for(let i=0;i<200;i++){
+        const empty = tiles.indexOf("");
+
+        const movesArr = [
+            empty-1, empty+1,
+            empty-size, empty+size
+        ].filter(x=>x>=0 && x<size*size);
+
+        const rand = movesArr[Math.floor(Math.random()*movesArr.length)];
+
+        [tiles[rand], tiles[empty]] = [tiles[empty], tiles[rand]];
     }
-    localStorage.setItem("coins",coins);
+
+    moves = 0;
+    time = 0;
+    running = false;
+
+    movesEl.textContent = 0;
+    timerEl.textContent = 0;
+
+    clearInterval(timer);
+
+    render();
+}
+
+function startTimer(){
+    timer = setInterval(()=>{
+        time++;
+        timerEl.textContent = time;
+    },1000);
 }
 
 function checkWin(){
-    let cards=document.querySelectorAll(".card");
-    let win=true;
 
-    cards.forEach(c=>{
-        if(!c.classList.contains("flip")) win=false;
-    });
-
-    if(win){
-        msg.innerHTML="🎉 Level Complete!";
-        clearInterval(timer);
+    for(let i=0;i<tiles.length-1;i++){
+        if(tiles[i] !== i+1) return;
     }
+
+    clearInterval(timer);
+
+    if(best == 0 || moves < best){
+        localStorage.setItem("bestMoves", moves);
+        bestEl.textContent = moves;
+    }
+
+    setTimeout(()=>{
+        alert(`🎉 YOU WIN!\nMoves: ${moves}\nTime: ${time}s`);
+    },200);
 }
 
-function gameOver(){
-    clearInterval(timer);
-    msg.innerHTML="💀 Game Over!";
-    document.getElementById("menu").style.display="block";
-}
+document.getElementById("shuffleBtn").onclick = shuffle;
+document.getElementById("restartBtn").onclick = init;
+levelEl.onchange = init;
 
-function restart(){
-    document.getElementById("menu").style.display="block";
-    game.innerHTML="";
-    msg.innerHTML="";
-    clearInterval(timer);
-}
+init();
