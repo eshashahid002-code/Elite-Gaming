@@ -1,142 +1,92 @@
-const puzzle = document.getElementById("puzzle");
-const movesEl = document.getElementById("moves");
-const timerEl = document.getElementById("timer");
-const bestEl = document.getElementById("best");
-const levelEl = document.getElementById("level");
-const clickSound = document.getElementById("clickSound");
+let playerScore = 0;
+let aiScore = 0;
+let streak = 0;
 
-let tiles = [];
-let size = 4;
+const playerScoreEl = document.getElementById("playerScore");
+const aiScoreEl = document.getElementById("aiScore");
+const resultEl = document.getElementById("result");
+const streakEl = document.getElementById("streak");
 
-let moves = 0;
-let time = 0;
-let timer;
-let running = false;
+const music = document.getElementById("bgMusic");
+const winSound = document.getElementById("winSound");
+const loseSound = document.getElementById("loseSound");
+const musicBtn = document.getElementById("musicBtn");
 
-let best = localStorage.getItem("bestMoves") || 0;
-bestEl.textContent = best;
+let musicOn = false;
 
-function init(){
-    size = parseInt(levelEl.value);
+// GOD MODE AI (slightly smart)
+function getAIChoice(playerChoice){
 
-    puzzle.style.gridTemplateColumns = `repeat(${size},1fr)`;
+    const counter = {
+        rock: "paper",
+        paper: "scissors",
+        scissors: "rock"
+    };
 
-    tiles = [...Array(size*size-1).keys()].map(i=>i+1);
-    tiles.push("");
-
-    moves = 0;
-    time = 0;
-    running = false;
-
-    movesEl.textContent = 0;
-    timerEl.textContent = 0;
-
-    clearInterval(timer);
-
-    render();
-    shuffle();
-}
-
-function render(){
-    puzzle.innerHTML = "";
-
-    tiles.forEach((t,i)=>{
-        const div = document.createElement("div");
-
-        if(t === ""){
-            div.className = "tile empty";
-        }else{
-            div.className = "tile";
-            div.textContent = t;
-
-            div.onclick = ()=>{
-                clickSound.play();
-                move(i);
-            };
-        }
-
-        puzzle.appendChild(div);
-    });
-}
-
-function move(i){
-    const empty = tiles.indexOf("");
-
-    const valid = [
-        empty-1, empty+1,
-        empty-size, empty+size
-    ];
-
-    if(valid.includes(i)){
-
-        [tiles[i], tiles[empty]] = [tiles[empty], tiles[i]];
-
-        moves++;
-        movesEl.textContent = moves;
-
-        if(!running){
-            startTimer();
-            running = true;
-        }
-
-        render();
-        checkWin();
-    }
-}
-
-function shuffle(){
-    for(let i=0;i<200;i++){
-        const empty = tiles.indexOf("");
-
-        const movesArr = [
-            empty-1, empty+1,
-            empty-size, empty+size
-        ].filter(x=>x>=0 && x<size*size);
-
-        const rand = movesArr[Math.floor(Math.random()*movesArr.length)];
-
-        [tiles[rand], tiles[empty]] = [tiles[empty], tiles[rand]];
+    // 60% chance AI counters you
+    if(Math.random() < 0.6){
+        return counter[playerChoice];
     }
 
-    moves = 0;
-    time = 0;
-    running = false;
-
-    movesEl.textContent = 0;
-    timerEl.textContent = 0;
-
-    clearInterval(timer);
-
-    render();
+    const choices = ["rock","paper","scissors"];
+    return choices[Math.floor(Math.random()*3)];
 }
 
-function startTimer(){
-    timer = setInterval(()=>{
-        time++;
-        timerEl.textContent = time;
-    },1000);
-}
+function play(playerChoice){
 
-function checkWin(){
+    const aiChoice = getAIChoice(playerChoice);
 
-    for(let i=0;i<tiles.length-1;i++){
-        if(tiles[i] !== i+1) return;
+    let result = "";
+
+    if(playerChoice === aiChoice){
+        result = "🤝 Draw!";
+    }
+    else if(
+        (playerChoice==="rock" && aiChoice==="scissors") ||
+        (playerChoice==="paper" && aiChoice==="rock") ||
+        (playerChoice==="scissors" && aiChoice==="paper")
+    ){
+        result = "🔥 You Win!";
+        playerScore++;
+        streak++;
+        winSound.play();
+    }
+    else{
+        result = "💀 AI Wins!";
+        aiScore++;
+        streak = 0;
+        loseSound.play();
     }
 
-    clearInterval(timer);
+    playerScoreEl.textContent = playerScore;
+    aiScoreEl.textContent = aiScore;
+    streakEl.textContent = streak;
 
-    if(best == 0 || moves < best){
-        localStorage.setItem("bestMoves", moves);
-        bestEl.textContent = moves;
-    }
-
-    setTimeout(()=>{
-        alert(`🎉 YOU WIN!\nMoves: ${moves}\nTime: ${time}s`);
-    },200);
+    resultEl.textContent = `You: ${playerChoice} | AI: ${aiChoice} → ${result}`;
 }
 
-document.getElementById("shuffleBtn").onclick = shuffle;
-document.getElementById("restartBtn").onclick = init;
-levelEl.onchange = init;
+// MUSIC
+musicBtn.onclick = async () => {
+    if(!musicOn){
+        await music.play();
+        musicOn = true;
+        musicBtn.textContent = "🔇 Music OFF";
+    }else{
+        music.pause();
+        musicOn = false;
+        musicBtn.textContent = "🎵 Music ON";
+    }
+};
 
-init();
+// RESET
+document.getElementById("resetBtn").onclick = () => {
+    playerScore = 0;
+    aiScore = 0;
+    streak = 0;
+
+    playerScoreEl.textContent = 0;
+    aiScoreEl.textContent = 0;
+    streakEl.textContent = 0;
+
+    resultEl.textContent = "Choose your weapon";
+};

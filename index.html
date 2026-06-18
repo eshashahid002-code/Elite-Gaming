@@ -3,39 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arcade Puzzle Pro</title>
+<title>RPS GOD MODE</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
 
-    <h1>🎮 ARCADE PUZZLE PRO</h1>
+    <h1>🔥 RPS GOD MODE</h1>
 
-    <div class="stats">
-        <span>🎯 Moves: <b id="moves">0</b></span>
-        <span>⏱ Time: <b id="timer">0</b>s</span>
-        <span>🏆 Best: <b id="best">0</b></span>
+    <div class="score">
+        <div>👤 You: <span id="playerScore">0</span></div>
+        <div>🤖 AI: <span id="aiScore">0</span></div>
     </div>
 
-    <select id="level">
-        <option value="3">Easy (3x3)</option>
-        <option value="4" selected>Medium (4x4)</option>
-        <option value="5">Hard (5x5)</option>
-    </select>
+    <div class="streak">
+        🏆 Streak: <span id="streak">0</span>
+    </div>
 
-    <div id="puzzle"></div>
+    <h2 id="result">Choose your weapon</h2>
 
-    <div class="buttons">
-        <button id="shuffleBtn">🔀 Shuffle</button>
-        <button id="restartBtn">🔁 Restart</button>
+    <div class="choices">
+
+        <button onclick="play('rock')">✊ Rock</button>
+        <button onclick="play('paper')">✋ Paper</button>
+        <button onclick="play('scissors')">✌ Scissors</button>
+
+    </div>
+
+    <div class="bottom">
+        <button id="musicBtn">🎵 Music</button>
+        <button id="resetBtn">🔁 Reset</button>
     </div>
 
 </div>
 
-<!-- click sound -->
-<audio id="clickSound">
-    <source src="click.mp3" type="audio/mpeg">
+<audio id="bgMusic" loop>
+    <source src="music.mp3">
+</audio>
+
+<audio id="winSound">
+    <source src="win.mp3">
+</audio>
+
+<audio id="loseSound">
+    <source src="lose.mp3">
 </audio>
 
 <script src="script.js"></script>
