@@ -1,74 +1,33 @@
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Segoe UI;
-}
-
 body{
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:radial-gradient(circle,#020617,#000);
-    color:white;
-}
-
-.container{
     text-align:center;
-    background:rgba(255,255,255,0.05);
-    padding:30px;
-    border-radius:20px;
-    box-shadow:0 0 40px cyan;
-    animation: glow 2s infinite alternate;
+    background:#111;
+    color:white;
+    font-family:Arial;
 }
 
-@keyframes glow{
-    from{box-shadow:0 0 20px cyan;}
-    to{box-shadow:0 0 60px cyan;}
-}
-
-h1{
-    color:#38bdf8;
-    text-shadow:0 0 20px cyan;
-}
-
-.score{
-    display:flex;
-    justify-content:space-between;
-    margin:15px 0;
-}
-
-.streak{
-    margin-bottom:10px;
-    color:#ffd700;
-    font-weight:bold;
-}
-
-h2{
-    margin:15px 0;
-    min-height:30px;
+canvas{
+    background:#222;
+    border:2px solid #00ff88;
+    margin-top:10px;
+    touch-action:none; /* swipe enable */
 }
 
 button{
-    padding:12px 18px;
-    margin:6px;
+    margin:5px;
+    padding:10px 15px;
     border:none;
-    border-radius:10px;
-    cursor:pointer;
-    background:#38bdf8;
+    background:#00ff88;
     font-weight:bold;
-    transition:0.2s;
+    cursor:pointer;
+    border-radius:8px;
 }
 
-button:hover{
-    transform:scale(1.1);
+.controls button{
+    width:60px;
+    height:60px;
 }
 
-.bottom button{
-    background:#22c55e;
-}
-
-#resetBtn{
-    background:#ef4444;
+#menu button{
+    font-size:18px;
+    padding:12px 25px;
 }

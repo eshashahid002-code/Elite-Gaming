@@ -1,92 +1,156 @@
-let playerScore = 0;
-let aiScore = 0;
-let streak = 0;
+let canvas = document.getElementById("game");
+let ctx = canvas.getContext("2d");
 
-const playerScoreEl = document.getElementById("playerScore");
-const aiScoreEl = document.getElementById("aiScore");
-const resultEl = document.getElementById("result");
-const streakEl = document.getElementById("streak");
+let box = 20;
 
-const music = document.getElementById("bgMusic");
-const winSound = document.getElementById("winSound");
-const loseSound = document.getElementById("loseSound");
-const musicBtn = document.getElementById("musicBtn");
+let snake, direction, food, score, level, speed, game;
+let high = localStorage.getItem("high") || 0;
 
-let musicOn = false;
+document.getElementById("high").innerText = high;
 
-// GOD MODE AI (slightly smart)
-function getAIChoice(playerChoice){
+let eatSound = document.getElementById("eatSound");
+let bgMusic = document.getElementById("bgMusic");
 
-    const counter = {
-        rock: "paper",
-        paper: "scissors",
-        scissors: "rock"
+// 📱 SWIPE CONTROL
+let startX, startY;
+
+canvas.addEventListener("touchstart", e=>{
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+});
+
+canvas.addEventListener("touchend", e=>{
+    let dx = e.changedTouches[0].clientX - startX;
+    let dy = e.changedTouches[0].clientY - startY;
+
+    if(Math.abs(dx) > Math.abs(dy)){
+        if(dx > 0) direction = "RIGHT";
+        else direction = "LEFT";
+    } else {
+        if(dy > 0) direction = "DOWN";
+        else direction = "UP";
+    }
+});
+
+// keyboard
+document.addEventListener("keydown",e=>{
+    if(e.key=="ArrowUp") direction="UP";
+    if(e.key=="ArrowDown") direction="DOWN";
+    if(e.key=="ArrowLeft") direction="LEFT";
+    if(e.key=="ArrowRight") direction="RIGHT";
+});
+
+function startGame(){
+
+    document.getElementById("menu").style.display="none";
+
+    snake=[{x:200,y:200}];
+    direction="RIGHT";
+
+    food=randomFood();
+
+    score=0;
+    level=1;
+    speed=200;
+
+    document.getElementById("score").innerText=0;
+    document.getElementById("level").innerText=1;
+
+    clearInterval(game);
+    game=setInterval(draw,speed);
+
+    bgMusic.play(); // 🎵 MUSIC START
+}
+
+function randomFood(){
+    return {
+        x: Math.floor(Math.random()*20)*box,
+        y: Math.floor(Math.random()*20)*box
     };
-
-    // 60% chance AI counters you
-    if(Math.random() < 0.6){
-        return counter[playerChoice];
-    }
-
-    const choices = ["rock","paper","scissors"];
-    return choices[Math.floor(Math.random()*3)];
 }
 
-function play(playerChoice){
+function draw(){
 
-    const aiChoice = getAIChoice(playerChoice);
+    ctx.fillStyle="#222";
+    ctx.fillRect(0,0,400,400);
 
-    let result = "";
+    snake.forEach((s,i)=>{
+        ctx.fillStyle=i==0?"#00ff88":"white";
+        ctx.fillRect(s.x,s.y,box,box);
+    });
 
-    if(playerChoice === aiChoice){
-        result = "🤝 Draw!";
+    ctx.fillStyle="red";
+    ctx.fillRect(food.x,food.y,box,box);
+
+    let head={...snake[0]};
+
+    if(direction=="UP") head.y-=box;
+    if(direction=="DOWN") head.y+=box;
+    if(direction=="LEFT") head.x-=box;
+    if(direction=="RIGHT") head.x+=box;
+
+    // eat
+    if(head.x==food.x && head.y==food.y){
+
+        score++;
+        eatSound.play();
+
+        // 📳 vibration
+        if(navigator.vibrate){
+            navigator.vibrate(100);
+        }
+
+        food=randomFood();
+
+        document.getElementById("score").innerText=score;
+
+        if(score % 5 == 0){
+            level++;
+            document.getElementById("level").innerText=level;
+
+            speed -= 20;
+            if(speed < 60) speed = 60;
+
+            clearInterval(game);
+            game=setInterval(draw,speed);
+        }
+
+    } else {
+        snake.pop();
     }
-    else if(
-        (playerChoice==="rock" && aiChoice==="scissors") ||
-        (playerChoice==="paper" && aiChoice==="rock") ||
-        (playerChoice==="scissors" && aiChoice==="paper")
+
+    // collision
+    if(
+        head.x<0 || head.x>=400 ||
+        head.y<0 || head.y>=400 ||
+        collision(head,snake)
     ){
-        result = "🔥 You Win!";
-        playerScore++;
-        streak++;
-        winSound.play();
-    }
-    else{
-        result = "💀 AI Wins!";
-        aiScore++;
-        streak = 0;
-        loseSound.play();
+        gameOver();
+        return;
     }
 
-    playerScoreEl.textContent = playerScore;
-    aiScoreEl.textContent = aiScore;
-    streakEl.textContent = streak;
-
-    resultEl.textContent = `You: ${playerChoice} | AI: ${aiChoice} → ${result}`;
+    snake.unshift(head);
 }
 
-// MUSIC
-musicBtn.onclick = async () => {
-    if(!musicOn){
-        await music.play();
-        musicOn = true;
-        musicBtn.textContent = "🔇 Music OFF";
-    }else{
-        music.pause();
-        musicOn = false;
-        musicBtn.textContent = "🎵 Music ON";
+function collision(head,array){
+    return array.some(s=>s.x==head.x && s.y==head.y);
+}
+
+function gameOver(){
+
+    clearInterval(game);
+    bgMusic.pause();
+
+    if(score > high){
+        high = score;
+        localStorage.setItem("high",high);
     }
-};
 
-// RESET
-document.getElementById("resetBtn").onclick = () => {
-    playerScore = 0;
-    aiScore = 0;
-    streak = 0;
+    document.getElementById("high").innerText=high;
 
-    playerScoreEl.textContent = 0;
-    aiScoreEl.textContent = 0;
-    streakEl.textContent = 0;
+    alert("💀 Game Over!");
+}
 
-    resultEl.textContent = "Choose your weapon";
-};
+function restart(){
+    location.reload();
+}
