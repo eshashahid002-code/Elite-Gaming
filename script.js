@@ -1,76 +1,133 @@
-const cells = document.querySelectorAll("[data-cell]");
-const statusText = document.getElementById("status");
-const restartBtn = document.getElementById("restartBtn");
+let level=1, score=0, lives=3, time=60;
+let coins = localStorage.getItem("coins") || 0;
+let best = localStorage.getItem("best") || 0;
 
-let currentPlayer = "X";
-let gameActive = true;
-let xScore = 0;
-let oScore = 0;
+document.getElementById("coins").innerText = coins;
+document.getElementById("best").innerText = best;
 
-const winPatterns = [
- [0,1,2],[3,4,5],[6,7,8],
- [0,3,6],[1,4,7],[2,5,8],
- [0,4,8],[2,4,6]
-];
+let game=document.querySelector(".game");
+let msg=document.getElementById("msg");
 
-cells.forEach(cell=>{
-    cell.addEventListener("click",handleClick);
-});
+let first=null, second=null;
+let timer;
 
-function handleClick(e){
+function emojis(level){
+    if(level==1) return ["🎮","🎮","🐍","🐍"];
+    if(level==2) return ["🎮","🎮","🐍","🐍","🚗","🚗"];
+    return ["🎮","🎮","🐍","🐍","🚗","🚗","🔥","🔥"];
+}
 
-    const cell = e.target;
+function startGame(lv){
 
-    if(cell.textContent!=="" || !gameActive) return;
+    level=lv;
+    document.getElementById("menu").style.display="none";
 
-    cell.textContent = currentPlayer;
-    cell.classList.add(currentPlayer.toLowerCase());
+    score=0;
+    lives=3;
+    time=60;
 
-    if(checkWin()){
+    update();
 
-        statusText.textContent = `🏆 Player ${currentPlayer} Wins!`;
+    game.innerHTML="";
+    msg.innerHTML="";
 
-        if(currentPlayer==="X"){
-            xScore++;
-            document.getElementById("xScore").textContent=xScore;
-        }else{
-            oScore++;
-            document.getElementById("oScore").textContent=oScore;
+    clearInterval(timer);
+    timer=setInterval(()=>{
+        time--;
+        update();
+        if(time==0) gameOver();
+    },1000);
+
+    let arr=emojis(level).sort(()=>Math.random()-0.5);
+
+    let cols = level==1?2:level==2?3:4;
+    game.style.gridTemplateColumns=`repeat(${cols},80px)`;
+
+    arr.forEach(e=>{
+        let box=document.createElement("div");
+        box.classList.add("card");
+        box.innerText="❓";
+
+        box.onclick=function(){
+
+            if(box.classList.contains("flip")) return;
+
+            box.classList.add("flip");
+            box.innerText=e;
+
+            if(!first){
+                first=box;
+            }else{
+                second=box;
+
+                if(first.innerText===second.innerText){
+                    score++;
+                    coins++;
+                    save();
+                    checkWin();
+                }else{
+                    setTimeout(()=>{
+                        first.classList.remove("flip");
+                        second.classList.remove("flip");
+                        first.innerText="❓";
+                        second.innerText="❓";
+
+                        lives--;
+                        update();
+
+                        if(lives==0) gameOver();
+
+                    },500);
+                }
+
+                first=null;
+                second=null;
+            }
         }
 
-        gameActive=false;
-        return;
-    }
+        game.appendChild(box);
+    });
+}
 
-    if(checkDraw()){
-        statusText.textContent="🤝 Draw!";
-        gameActive=false;
-        return;
-    }
+function update(){
+    document.getElementById("level").innerText=level;
+    document.getElementById("score").innerText=score;
+    document.getElementById("lives").innerText=lives;
+    document.getElementById("time").innerText=time;
+    document.getElementById("coins").innerText=coins;
+}
 
-    currentPlayer=currentPlayer==="X"?"O":"X";
-    statusText.textContent=`Player ${currentPlayer} Turn`;
+function save(){
+    if(score>best){
+        best=score;
+        localStorage.setItem("best",best);
+    }
+    localStorage.setItem("coins",coins);
 }
 
 function checkWin(){
-    return winPatterns.some(pattern=>{
-        return pattern.every(index=>
-            cells[index].textContent===currentPlayer
-        );
-    });
-}
+    let cards=document.querySelectorAll(".card");
+    let win=true;
 
-function checkDraw(){
-    return [...cells].every(cell=>cell.textContent!=="");
-}
-
-restartBtn.addEventListener("click",()=>{
-    cells.forEach(cell=>{
-        cell.textContent="";
-        cell.className="cell";
+    cards.forEach(c=>{
+        if(!c.classList.contains("flip")) win=false;
     });
 
-    currentPlayer="X";
-    gameActive=true;
-    statusText.textContent="Player X Turn";
-});
+    if(win){
+        msg.innerHTML="🎉 Level Complete!";
+        clearInterval(timer);
+    }
+}
+
+function gameOver(){
+    clearInterval(timer);
+    msg.innerHTML="💀 Game Over!";
+    document.getElementById("menu").style.display="block";
+}
+
+function restart(){
+    document.getElementById("menu").style.display="block";
+    game.innerHTML="";
+    msg.innerHTML="";
+    clearInterval(timer);
+}
